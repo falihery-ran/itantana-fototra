@@ -1,0 +1,5 @@
+[conf1]
+dummy = 1
+
+[conf1.array1]
+foo = "bar"
