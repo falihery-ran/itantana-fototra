@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use itantana_fototra::{
+use fototra::{
     dtos::{
         find_request::FindRequest,
         user::{

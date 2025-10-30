@@ -1,6 +1,6 @@
 use std::{str::FromStr, sync::LazyLock};
 
-use regex::Regex;
+use fancy_regex::Regex;
 use serde::{Deserialize, Serialize};
 
 // Basic password: at least 8 characters, contains letter and number
@@ -63,10 +63,10 @@ impl PasswordLevel {
 
     pub fn validate(&self, password: &str) -> bool {
         match self {
-            PasswordLevel::Basic => BASIC_PASSWORD.is_match(password),
-            PasswordLevel::Medium => MEDIUM_PASSWORD.is_match(password),
-            PasswordLevel::Strong => STRONG_PASSWORD.is_match(password),
-            PasswordLevel::VeryStrong => VERY_STRONG_PASSWORD.is_match(password),
+            PasswordLevel::Basic => BASIC_PASSWORD.is_match(password).is_ok_and(|ok| ok),
+            PasswordLevel::Medium => MEDIUM_PASSWORD.is_match(password).is_ok_and(|ok| ok),
+            PasswordLevel::Strong => STRONG_PASSWORD.is_match(password).is_ok_and(|ok| ok),
+            PasswordLevel::VeryStrong => VERY_STRONG_PASSWORD.is_match(password).is_ok_and(|ok| ok),
         }
     }
 }

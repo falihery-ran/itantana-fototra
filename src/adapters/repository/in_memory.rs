@@ -32,7 +32,8 @@ impl InitializeTrait for InMemoryRepository {
         &'a self,
     ) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>> {
         Box::pin(async {
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .unwrap()
                 .initialize()
@@ -50,27 +51,34 @@ impl AdapterLoaderTrait for InMemoryRepository {
 
     fn load(&self) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>> {
         Box::pin(async {
-            Runtime::register(PermissionRepository::new(Arc::new(
-                InMemoryPermissionRepository::new(),
-            )))
-            .await;
-            Runtime::register(UserRepository::new(Arc::new(InMemoryUserRepository::new()))).await;
-            Runtime::register(UserInternetRepository::new(Arc::new(
-                InMemoryUserInternetRepository::new(),
-            )))
-            .await;
-            Runtime::register(UserPermissionRepository::new(Arc::new(
-                InMemoryUserPermissionRepository::new(),
-            )))
-            .await;
-            Runtime::register(UserPasswordPolicyRepository::new(Arc::new(
-                InMemoryUserPasswordPolicyRepository::new(),
-            )))
-            .await;
-            Runtime::register(UserPasswordRepository::new(Arc::new(
-                InMemoryUserPasswordRepository::new(),
-            )))
-            .await;
+            Runtime::get_instance()
+                .register(PermissionRepository::new(Arc::new(
+                    InMemoryPermissionRepository::new(),
+                )))
+                .await;
+            Runtime::get_instance()
+                .register(UserRepository::new(Arc::new(InMemoryUserRepository::new())))
+                .await;
+            Runtime::get_instance()
+                .register(UserInternetRepository::new(Arc::new(
+                    InMemoryUserInternetRepository::new(),
+                )))
+                .await;
+            Runtime::get_instance()
+                .register(UserPermissionRepository::new(Arc::new(
+                    InMemoryUserPermissionRepository::new(),
+                )))
+                .await;
+            Runtime::get_instance()
+                .register(UserPasswordPolicyRepository::new(Arc::new(
+                    InMemoryUserPasswordPolicyRepository::new(),
+                )))
+                .await;
+            Runtime::get_instance()
+                .register(UserPasswordRepository::new(Arc::new(
+                    InMemoryUserPasswordRepository::new(),
+                )))
+                .await;
             Ok(())
         })
     }

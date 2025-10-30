@@ -38,7 +38,8 @@ impl UserPasswordService {
                 .map_err(ServiceError::new)?;
             let password = Password::new(
                 req.get_password(),
-                &Runtime::get::<UserPasswordPolicyRepository>()
+                &Runtime::get_instance()
+                    .get::<UserPasswordPolicyRepository>()
                     .await
                     .ok_or(ServiceError::new(UserPasswordPolicyError::Unknown(
                         anyhow!("Cannot get user_password_policy repository"),
@@ -51,7 +52,8 @@ impl UserPasswordService {
             )
             .map_err(|e| ServiceError::new(UserPasswordError::PasswordError(e)))?;
             let user_password = UserPassword::new(req.get_user_id(), &password);
-            Runtime::get::<UserPasswordRepository>()
+            Runtime::get_instance()
+                .get::<UserPasswordRepository>()
                 .await
                 .ok_or(ServiceError::new(UserPasswordPolicyError::Unknown(
                     anyhow!("Cannot get user_password repository"),
@@ -77,7 +79,8 @@ impl UserPasswordService {
                 .authorize("user_password:match")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserPasswordRepository>()
+            Runtime::get_instance()
+                .get::<UserPasswordRepository>()
                 .await
                 .ok_or(ServiceError::new(UserPasswordError::Unknown(anyhow!(
                     "Cannot get user_password repository"

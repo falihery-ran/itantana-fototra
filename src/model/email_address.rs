@@ -1,6 +1,6 @@
 use std::{fmt::Display, ops::Deref, sync::LazyLock};
 
-use regex::Regex;
+use fancy_regex::Regex;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -19,7 +19,9 @@ impl EmailAddress {
     }
 
     fn validate_email(email: &str) -> Result<(), EmailAddressError> {
-        if EMAIL_REGEX.is_match(email) {
+        if EMAIL_REGEX.is_match(email).map_err(|e| EmailAddressError {
+            invalid_email: e.to_string(),
+        })? {
             return Ok(());
         }
         Err(EmailAddressError {

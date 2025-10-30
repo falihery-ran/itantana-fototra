@@ -36,7 +36,8 @@ impl UserService {
                 .authorize("user:create")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
@@ -62,7 +63,8 @@ impl UserService {
                 .authorize("user:update")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
@@ -87,7 +89,8 @@ impl UserService {
                 .authorize("user:find_one")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
@@ -112,7 +115,8 @@ impl UserService {
                 .authorize("user:find")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
@@ -137,7 +141,8 @@ impl UserService {
                 .authorize("user:delete")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserRepository>()
+            Runtime::get_instance()
+                .get::<UserRepository>()
                 .await
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"

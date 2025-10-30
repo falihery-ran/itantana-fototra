@@ -30,7 +30,8 @@ impl UserPermissionService {
                 .authorize("user_permission:create")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserPermissionRepository>()
+            Runtime::get_instance()
+                .get::<UserPermissionRepository>()
                 .await
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
                     "Cannot get user_permission repository"
@@ -55,7 +56,8 @@ impl UserPermissionService {
                 .authorize("user_permission:find")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserPermissionRepository>()
+            Runtime::get_instance()
+                .get::<UserPermissionRepository>()
                 .await
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
                     "Cannot get user_permisison repository"
@@ -80,7 +82,8 @@ impl UserPermissionService {
                 .authorize("user_permission:delete")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get::<UserPermissionRepository>()
+            Runtime::get_instance()
+                .get::<UserPermissionRepository>()
                 .await
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
                     "Cannot get user_permission repository"
