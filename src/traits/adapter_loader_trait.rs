@@ -6,9 +6,9 @@ pub trait AdapterLoaderTrait: InitializeTrait + Debug + Send + Sync {
     fn name(&self) -> &str;
 
     /// Add adapter into the runtime
-    /// Adapter should be loaded before initialized
+    /// Adapter should be prepared before initialized
     /// call load before initialiaze
-    fn load(&self) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>;
+    fn load<'a>(&'a self) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>;
 }
 
 impl Hash for dyn AdapterLoaderTrait {

@@ -1,86 +1,77 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    ffi::c_void,
+    mem::zeroed,
     sync::{Arc, OnceLock},
 };
 
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
-use crate::{
-    adapters::ADAPTER_LIST,
-    configuration::load_configuration,
-    repository::{
-        permission_repository::PermissionRepository,
-        user_internet_repository::UserInternetRepository,
-        user_password_policy_repository::UserPasswordPolicyRepository,
-        user_password_repository::UserPasswordRepository,
-        user_permission_repository::UserPermissionRepository, user_repository::UserRepository,
-    },
-};
+use crate::{configuration::load_configuration, traits::adapter_loader_trait::AdapterLoaderTrait};
 
-type ServiceRegistry = HashMap<TypeId, Box<dyn Any + Send + Sync>>;
-static REGISTRY: OnceLock<RwLock<ServiceRegistry>> = OnceLock::new();
+type ServiceRegistry = HashMap<TypeId, Arc<dyn Any + Send + Sync>>;
+static REGISTRY: OnceLock<Arc<RwLock<ServiceRegistry>>> = OnceLock::new();
+static ADAPTER_LIST: OnceLock<Arc<Mutex<HashSet<Arc<dyn AdapterLoaderTrait>>>>> = OnceLock::new();
 
-pub struct Runtime;
+#[repr(C)]
+pub struct Runtime {
+    _phantom: c_void,
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn get_runtime() -> Runtime {
+    Runtime::get_instance()
+}
 
 impl Runtime {
-    /// Initialize the runtime (call once at startup)
-    pub async fn init() -> Result<(), &'static str> {
-        REGISTRY
-            .set(RwLock::new(HashMap::new()))
-            .map_err(|_| "Runtime already initialized")?;
-        Runtime::register(load_configuration()).await;
-        let adapter_list = ADAPTER_LIST.get().unwrap().lock().await;
-        for adapter in adapter_list.iter() {
-            adapter.load().await.unwrap();
+    pub fn get_instance() -> Self {
+        Self {
+            _phantom: unsafe { zeroed() },
         }
-        for adapter in adapter_list.iter() {
-            adapter.initialize().await.unwrap();
-        }
-
-        Self::verify_initialized().await
     }
 
-    async fn verify_initialized() -> Result<(), &'static str> {
-        Runtime::get::<PermissionRepository>()
-            .await
-            .ok_or("PermissionRepository not registered")?;
-        Runtime::get::<UserRepository>()
-            .await
-            .ok_or("UserRepository not registered")?;
-        Runtime::get::<UserInternetRepository>()
-            .await
-            .ok_or("UserInternetRepository not registered")?;
-        Runtime::get::<UserPasswordRepository>()
-            .await
-            .ok_or("UserPasswordRepository not registered")?;
-        Runtime::get::<UserPasswordPolicyRepository>()
-            .await
-            .ok_or("UserPasswordPolicyRepository not registered")?;
-        Runtime::get::<UserPermissionRepository>()
-            .await
-            .ok_or("UserPermissionRepository not registered")?;
+    /// Initialize the runtime (call once at startup)
+    pub async fn init(&self) -> Result<(), &'static str> {
+        if REGISTRY.get().is_none() {
+            REGISTRY
+                .set(Arc::new(RwLock::new(HashMap::new())))
+                .map_err(|_| "Runtime already initialized")?;
+            self.register(load_configuration()).await;
+        }
         Ok(())
     }
 
+    pub async fn add_adapter(&self, adapter: Arc<dyn AdapterLoaderTrait>) {
+        let adapter = adapter.clone();
+        if let Some(list) = ADAPTER_LIST.get() {
+            let mut list = list.lock().await;
+            list.insert(adapter.clone());
+        } else {
+            let mut hashset = HashSet::new();
+            hashset.insert(adapter.clone());
+            ADAPTER_LIST.set(Arc::new(Mutex::new(hashset))).unwrap();
+        }
+        adapter.load().await.unwrap();
+    }
+
     /// Register a service
-    pub async fn register<T: Send + Sync + 'static>(service: T) {
+    pub async fn register<T: Send + Sync + 'static>(&self, service: T) {
         let registry = REGISTRY.get().expect("Runtime not initialized");
         let mut map = registry.write().await;
-        map.insert(TypeId::of::<T>(), Box::new(Arc::new(service)));
+        map.insert(TypeId::of::<T>(), Arc::new(service));
     }
 
     /// Get a service
-    pub async fn get<T: Send + Sync + 'static>() -> Option<Arc<T>> {
+    pub async fn get<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         let registry = REGISTRY.get().expect("Runtime not initialized");
         let map = registry.read().await;
         map.get(&TypeId::of::<T>())
-            .and_then(|any| any.downcast_ref::<Arc<T>>())
-            .cloned()
+            .and_then(|any| any.clone().downcast::<T>().ok())
     }
 
     /// Check if runtime is initialized
-    pub fn is_initialized() -> bool {
+    pub fn is_initialized(&self) -> bool {
         REGISTRY.get().is_some()
     }
 }

@@ -35,7 +35,8 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get::<UserInternetRepository>()
+            Runtime::get_instance()
+                .get::<UserInternetRepository>()
                 .await
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
@@ -61,7 +62,8 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get::<UserInternetRepository>()
+            Runtime::get_instance()
+                .get::<UserInternetRepository>()
                 .await
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
@@ -87,7 +89,8 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get::<UserInternetRepository>()
+            Runtime::get_instance()
+                .get::<UserInternetRepository>()
                 .await
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
