@@ -2,10 +2,7 @@ mod user;
 
 use std::{path::PathBuf, sync::Arc};
 
-use fototra::{
-    adapters::{Adapter, repository::in_memory::InMemoryRepository},
-    runtime::{Runtime, get_runtime},
-};
+use fototra::{adapters::repository::in_memory::InMemoryRepository, runtime::Runtime};
 use libloading::{Library, Symbol};
 use user::test_users;
 
@@ -31,19 +28,16 @@ async fn tests() {
     let lib = unsafe { Library::new(lib_path).expect("Failed to load library") };
     let mut get_runtime: Option<Symbol<unsafe extern "C" fn() -> Runtime>> = None;
     unsafe {
-        let get_adapter: Symbol<unsafe extern "C" fn() -> Adapter> = lib
-            .get(b"get_adapter")
-            .expect("Failed to load 'get_adapter' function");
         get_runtime = Some(
             lib.get(b"get_runtime")
                 .expect("Failed to load 'get_adapter' function"),
         );
 
-        get_adapter().insert(Arc::new(InMemoryRepository)).await;
         get_runtime.as_ref().unwrap()().init().await.unwrap();
+        get_runtime.as_ref().unwrap()()
+            .add_adapter(Arc::new(InMemoryRepository))
+            .await;
     }
 
     test_users().await;
-
-    unsafe { get_runtime.as_ref().unwrap()().end().await }
 }

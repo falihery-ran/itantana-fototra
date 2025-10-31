@@ -75,6 +75,16 @@ pub async fn test_users() {
 
     let created_user = UserService::create(&token, &user_add_request)
         .await
+        .map_err(|e| {
+            let mut msg = String::new();
+            if let Some(error) = e.get::<SecurityError>() {
+                msg = error.to_string();
+            } else if let Some(error) = e.get::<UserError>() {
+                msg = error.to_string();
+            }
+            println!("error message: {}", msg);
+            msg
+        })
         .unwrap();
 
     assert!(!created_user.get_id().is_nil());

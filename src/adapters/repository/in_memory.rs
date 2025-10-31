@@ -49,7 +49,9 @@ impl AdapterLoaderTrait for InMemoryRepository {
         "InMemoryRepository"
     }
 
-    fn load(&self) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>> {
+    fn load<'a>(
+        &'a self,
+    ) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>> {
         Box::pin(async {
             Runtime::get_instance()
                 .register(PermissionRepository::new(Arc::new(
@@ -79,7 +81,7 @@ impl AdapterLoaderTrait for InMemoryRepository {
                     InMemoryUserPasswordRepository::new(),
                 )))
                 .await;
-            Ok(())
+            self.initialize().await
         })
     }
 }

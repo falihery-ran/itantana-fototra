@@ -1,33 +1,18 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::c_void,
     mem::zeroed,
-    sync::{Arc, LazyLock, OnceLock},
+    sync::{Arc, OnceLock},
 };
 
-use futures::future::join_all;
-use tokio::{
-    sync::{Mutex, RwLock},
-    task::JoinHandle,
-};
+use tokio::sync::{Mutex, RwLock};
 
-use crate::{
-    adapters::ADAPTER_LIST,
-    configuration::load_configuration,
-    repository::{
-        permission_repository::PermissionRepository,
-        user_internet_repository::UserInternetRepository,
-        user_password_policy_repository::UserPasswordPolicyRepository,
-        user_password_repository::UserPasswordRepository,
-        user_permission_repository::UserPermissionRepository, user_repository::UserRepository,
-    },
-};
+use crate::{configuration::load_configuration, traits::adapter_loader_trait::AdapterLoaderTrait};
 
 type ServiceRegistry = HashMap<TypeId, Arc<dyn Any + Send + Sync>>;
 static REGISTRY: OnceLock<Arc<RwLock<ServiceRegistry>>> = OnceLock::new();
-static INIT_LIST: LazyLock<Arc<Mutex<Option<Vec<JoinHandle<Result<(), anyhow::Error>>>>>>> =
-    LazyLock::new(|| Arc::new(Mutex::new(None)));
+static ADAPTER_LIST: OnceLock<Arc<Mutex<HashSet<Arc<dyn AdapterLoaderTrait>>>>> = OnceLock::new();
 
 #[repr(C)]
 pub struct Runtime {
@@ -53,47 +38,21 @@ impl Runtime {
                 .set(Arc::new(RwLock::new(HashMap::new())))
                 .map_err(|_| "Runtime already initialized")?;
             self.register(load_configuration()).await;
-            let adapter_list = ADAPTER_LIST.get().unwrap().lock().await;
-            let mut load_list = Vec::new();
-            let mut init_list = INIT_LIST.lock().await;
-            let mut list = Vec::new();
-            for adapter in adapter_list.iter() {
-                let adapter_cloned = adapter.clone();
-                load_list.push(tokio::spawn(async move { adapter_cloned.load().await }));
-                let adapter_cloned = adapter.clone();
-                list.push(tokio::spawn(
-                    async move { adapter_cloned.initialize().await },
-                ));
-            }
-            *init_list = Some(list);
-            let load_result = join_all(load_list).await;
-            let _ = load_result.into_iter().map(|l| l.unwrap());
-
-            self.verify_initialized().await?;
         }
         Ok(())
     }
 
-    async fn verify_initialized(&self) -> Result<(), &'static str> {
-        self.get::<PermissionRepository>()
-            .await
-            .ok_or("PermissionRepository not registered")?;
-        self.get::<UserRepository>()
-            .await
-            .ok_or("UserRepository not registered")?;
-        self.get::<UserInternetRepository>()
-            .await
-            .ok_or("UserInternetRepository not registered")?;
-        self.get::<UserPasswordRepository>()
-            .await
-            .ok_or("UserPasswordRepository not registered")?;
-        self.get::<UserPasswordPolicyRepository>()
-            .await
-            .ok_or("UserPasswordPolicyRepository not registered")?;
-        self.get::<UserPermissionRepository>()
-            .await
-            .ok_or("UserPermissionRepository not registered")?;
-        Ok(())
+    pub async fn add_adapter(&self, adapter: Arc<dyn AdapterLoaderTrait>) {
+        let adapter = adapter.clone();
+        if let Some(list) = ADAPTER_LIST.get() {
+            let mut list = list.lock().await;
+            list.insert(adapter.clone());
+        } else {
+            let mut hashset = HashSet::new();
+            hashset.insert(adapter.clone());
+            ADAPTER_LIST.set(Arc::new(Mutex::new(hashset))).unwrap();
+        }
+        adapter.load().await.unwrap();
     }
 
     /// Register a service
@@ -114,14 +73,6 @@ impl Runtime {
     /// Check if runtime is initialized
     pub fn is_initialized(&self) -> bool {
         REGISTRY.get().is_some()
-    }
-
-    pub async fn end(&self) {
-        let mut init_list = INIT_LIST.lock().await;
-        let list = init_list.take().unwrap();
-        for i in list {
-            let _ = i.await.unwrap();
-        }
     }
 }
 
