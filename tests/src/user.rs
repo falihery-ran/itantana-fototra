@@ -34,9 +34,9 @@ impl AuthorizationTrait for Entity {
     ) -> std::pin::Pin<Box<dyn Future<Output = Result<(), SecurityError>> + Send + 'a>> {
         Box::pin(async {
             if self.authorized {
-                return Ok(());
+                Ok(())
             } else {
-                return Err(SecurityError::NotAuthorized);
+                Err(SecurityError::NotAuthorized)
             }
         })
     }
@@ -82,7 +82,6 @@ pub async fn test_users() {
             } else if let Some(error) = e.get::<UserError>() {
                 msg = error.to_string();
             }
-            println!("error message: {}", msg);
             msg
         })
         .unwrap();
@@ -105,7 +104,7 @@ pub async fn test_users() {
     // try to update the wrong user
     let user_update_request =
         UserUpdateRequest::new(created_user.get_id(), &firstname, Some(&lastname));
-    let wrong_user_id = Uuid::new_v4();
+    let wrong_user_id = Uuid::now_v7();
     let user_mismatch_id_err = UserService::update(&token, &wrong_user_id, &user_update_request)
         .await
         .unwrap_err();
@@ -115,7 +114,7 @@ pub async fn test_users() {
             "{:?}",
             ServiceError::new(UserError::MismatchUserId {
                 id1: wrong_user_id,
-                id2: updated_user.get_id().clone()
+                id2: *updated_user.get_id()
             })
         )
     );
@@ -124,19 +123,12 @@ pub async fn test_users() {
     let find_request = FindRequest::<UserFindRequestFilter>::default();
     let user_list = UserService::find(&token, &find_request).await.unwrap();
 
-    println!("{:?}", user_list);
-
     assert_eq!(user_list.get_page_count(), 1);
     assert_eq!(user_list.get_result().count(), 2);
-    assert!(
-        user_list
-            .get_result()
-            .find(|user| *user == updated_user)
-            .is_some()
-    );
+    assert!(user_list.get_result().any(|user| user == updated_user));
 
     // find one user
-    let user = UserService::find_one(&token, &updated_user.get_id())
+    let user = UserService::find_one(&token, updated_user.get_id())
         .await
         .unwrap();
     assert_eq!(user, updated_user);
@@ -149,7 +141,7 @@ pub async fn test_users() {
         .unwrap();
 
     // try to find one deleted user
-    let user_not_exist_err = UserService::find_one(&token, &updated_user.get_id())
+    let user_not_exist_err = UserService::find_one(&token, updated_user.get_id())
         .await
         .unwrap_err();
     assert_eq!(
@@ -157,14 +149,14 @@ pub async fn test_users() {
         format!(
             "{:?}",
             ServiceError::new(UserError::UserNotExists {
-                id: updated_user.get_id().clone()
+                id: *updated_user.get_id()
             })
         )
     );
 
     // try to update deleted user
     let user_not_exist_err =
-        UserService::update(&token, &updated_user.get_id(), &user_update_request)
+        UserService::update(&token, updated_user.get_id(), &user_update_request)
             .await
             .unwrap_err();
     assert_eq!(
@@ -172,7 +164,7 @@ pub async fn test_users() {
         format!(
             "{:?}",
             ServiceError::new(UserError::UserNotExists {
-                id: updated_user.get_id().clone()
+                id: *updated_user.get_id()
             })
         )
     );
@@ -187,7 +179,7 @@ pub async fn test_users() {
         format!(
             "{:?}",
             ServiceError::new(UserError::UserNotExists {
-                id: updated_user.get_id().clone()
+                id: *updated_user.get_id()
             })
         )
     );

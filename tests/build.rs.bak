@@ -1,0 +1,7 @@
+use std::env;
+
+
+fn main() {
+    let target_dir = env::var("CARGO_TARGET_DIR").expect("CARGO_TARGET_DIR not set");
+    println!("cargo:rustc-env=TEST_TARGET_DIR={}", target_dir);
+}

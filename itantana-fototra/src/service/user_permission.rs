@@ -8,8 +8,8 @@ use crate::dtos::user_permission::user_permission_find_request_filter::UserPermi
 use crate::dtos::{find_request::FindRequest, find_response::FindResponse};
 use crate::model::user_permission::UserPermission;
 use crate::model::user_permission::error::UserPermissionError;
+use crate::registry::Registry;
 use crate::repository::user_permission_repository::UserPermissionRepository;
-use crate::runtime::Runtime;
 use crate::service::error::ServiceError;
 use crate::traits::authentication_trait::AuthenticationTrait;
 
@@ -30,9 +30,9 @@ impl UserPermissionService {
                 .authorize("user_permission:create")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserPermissionRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserPermissionRepository>("user_permission_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
                     "Cannot get user_permission repository"
                 ))))?
@@ -56,11 +56,11 @@ impl UserPermissionService {
                 .authorize("user_permission:find")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserPermissionRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserPermissionRepository>("user_permission_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
-                    "Cannot get user_permisison repository"
+                    "Cannot get user_permission repository"
                 ))))?
                 .clone()
                 .find_all(req)
@@ -82,9 +82,9 @@ impl UserPermissionService {
                 .authorize("user_permission:delete")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserPermissionRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserPermissionRepository>("user_permission_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserPermissionError::Unknown(anyhow!(
                     "Cannot get user_permission repository"
                 ))))?

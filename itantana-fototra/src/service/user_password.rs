@@ -10,11 +10,11 @@ use crate::{
             user_password_policy::error::UserPasswordPolicyError,
         },
     },
+    registry::Registry,
     repository::{
         user_password_policy_repository::UserPasswordPolicyRepository,
         user_password_repository::UserPasswordRepository,
     },
-    runtime::Runtime,
     service::error::ServiceError,
     traits::authentication_trait::AuthenticationTrait,
 };
@@ -38,9 +38,9 @@ impl UserPasswordService {
                 .map_err(ServiceError::new)?;
             let password = Password::new(
                 req.get_password(),
-                &Runtime::get_instance()
-                    .get::<UserPasswordPolicyRepository>()
-                    .await
+                &Registry::get_instance()
+                    .get::<UserPasswordPolicyRepository>("user_password_policy_repository")
+                    .map_err(ServiceError::new)?
                     .ok_or(ServiceError::new(UserPasswordPolicyError::Unknown(
                         anyhow!("Cannot get user_password_policy repository"),
                     )))?
@@ -52,12 +52,12 @@ impl UserPasswordService {
             )
             .map_err(|e| ServiceError::new(UserPasswordError::PasswordError(e)))?;
             let user_password = UserPassword::new(req.get_user_id(), &password);
-            Runtime::get_instance()
-                .get::<UserPasswordRepository>()
-                .await
-                .ok_or(ServiceError::new(UserPasswordPolicyError::Unknown(
-                    anyhow!("Cannot get user_password repository"),
-                )))?
+            Registry::get_instance()
+                .get::<UserPasswordRepository>("user_password_repository")
+                .map_err(ServiceError::new)?
+                .ok_or(ServiceError::new(UserPasswordError::Unknown(anyhow!(
+                    "Cannot get user_password repository"
+                ))))?
                 .clone()
                 .save(&user_password)
                 .await
@@ -79,9 +79,9 @@ impl UserPasswordService {
                 .authorize("user_password:match")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserPasswordRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserPasswordRepository>("user_password_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserPasswordError::Unknown(anyhow!(
                     "Cannot get user_password repository"
                 ))))?

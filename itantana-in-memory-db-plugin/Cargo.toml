@@ -1,0 +1,19 @@
+[package]
+name = "itantana-in-memory-db"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords = ["itantana"]
+authors.workspace = true
+license.workspace = true
+
+[lib]
+name = "in_memory_db"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+anyhow = "1.0.100"
+itantana-fototra = {path = "../itantana-fototra"}
+libloading = "0.8.9"
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "sync"] }
+uuid = { version = "1.18.1", features = ["v7"] }

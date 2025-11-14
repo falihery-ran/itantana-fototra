@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use std::future::Future;
 
 use crate::model::user::UserID;
-use crate::runtime::Runtime;
+use crate::registry::Registry;
 use crate::service::error::ServiceError;
 use crate::traits::authentication_trait::AuthenticationTrait;
 use crate::{
@@ -36,9 +36,9 @@ impl UserService {
                 .authorize("user:create")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserRepository>("user_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
                 ))))?
@@ -63,9 +63,9 @@ impl UserService {
                 .authorize("user:update")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserRepository>("user_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
                 ))))?
@@ -89,9 +89,9 @@ impl UserService {
                 .authorize("user:find_one")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserRepository>("user_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
                 ))))?
@@ -115,9 +115,9 @@ impl UserService {
                 .authorize("user:find")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserRepository>("user_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
                 ))))?
@@ -141,9 +141,9 @@ impl UserService {
                 .authorize("user:delete")
                 .await
                 .map_err(ServiceError::new)?;
-            Runtime::get_instance()
-                .get::<UserRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserRepository>("user_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserError::Unknown(anyhow!(
                     "Cannot get user repository"
                 ))))?

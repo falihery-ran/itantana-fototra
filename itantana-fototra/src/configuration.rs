@@ -16,6 +16,66 @@ pub enum Configuration {
     DateTime(DateTime<Utc>),
 }
 
+impl TryFrom<Configuration> for HashMap<String, Configuration> {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::Map(m) => Ok(m),
+            _ => Err("Cannot parse configuration to map"),
+        }
+    }
+}
+
+impl TryFrom<Configuration> for Vec<Configuration> {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::Array(v) => Ok(v),
+            _ => Err("Cannot parse configuration to array"),
+        }
+    }
+}
+
+impl TryFrom<Configuration> for String {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::String(s) => Ok(s),
+            _ => Err("Cannot parse configuration to string"),
+        }
+    }
+}
+
+impl TryFrom<Configuration> for i64 {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::Int(i) => Ok(i),
+            _ => Err("Cannot parse configuration to integer"),
+        }
+    }
+}
+
+impl TryFrom<Configuration> for bool {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::Bool(b) => Ok(b),
+            _ => Err("Cannot parse configuration to bool"),
+        }
+    }
+}
+
+impl TryFrom<Configuration> for DateTime<Utc> {
+    type Error = &'static str;
+    fn try_from(value: Configuration) -> Result<Self, Self::Error> {
+        match value {
+            Configuration::DateTime(d) => Ok(d),
+            _ => Err("Cannot parse configuration to datetime"),
+        }
+    }
+}
+
 impl Configuration {
     pub fn merge(&self, setting_value: &Configuration) -> Configuration {
         match (self, setting_value) {
@@ -90,16 +150,13 @@ pub(crate) fn load_configuration() -> Configuration {
     let pwd = env::var("PWD").unwrap();
     let current_dir = Path::new(&pwd);
 
-    eprintln!("config path: {:?}", config_path);
-    eprintln!("secret path: {:?}", secret_path);
     if !config_path.exists() {
         config_path = current_dir.join("config.toml");
     }
     if !secret_path.exists() {
         secret_path = current_dir.join("secret.toml");
     }
-    eprintln!("config path: {:?}", config_path);
-    eprintln!("secret path: {:?}", secret_path);
+
     let mut config = File::open(&config_path)
         .map_err(|e| anyhow!("failed to load config.toml: {:?}", e))
         .unwrap();

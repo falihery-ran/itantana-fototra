@@ -3,3 +3,6 @@ dummy = 1
 
 [conf1.array1]
 foo = "bar"
+
+[plugins.inmemorydb]
+path = "libin_memory_db.so"

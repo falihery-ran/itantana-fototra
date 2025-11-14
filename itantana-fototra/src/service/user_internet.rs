@@ -11,8 +11,8 @@ use crate::{
         },
     },
     model::user_internet::{UserInternet, error::UserInternetError},
+    registry::Registry,
     repository::user_internet_repository::UserInternetRepository,
-    runtime::Runtime,
     service::error::ServiceError,
     traits::authentication_trait::AuthenticationTrait,
 };
@@ -35,9 +35,9 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get_instance()
-                .get::<UserInternetRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserInternetRepository>("user_internet_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
                 ))))?
@@ -62,9 +62,9 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get_instance()
-                .get::<UserInternetRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserInternetRepository>("user_internet_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
                 ))))?
@@ -89,9 +89,9 @@ impl UserInternetService {
                 .await
                 .map_err(ServiceError::new)?;
 
-            Runtime::get_instance()
-                .get::<UserInternetRepository>()
-                .await
+            Registry::get_instance()
+                .get::<UserInternetRepository>("user_internet_repository")
+                .map_err(ServiceError::new)?
                 .ok_or(ServiceError::new(UserInternetError::Unknown(anyhow!(
                     "Cannot get user_internet repository"
                 ))))?
